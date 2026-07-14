@@ -30,8 +30,8 @@ import uuid
 def detect_pages(data: dict):
     """
     Tra ve danh sach cac "page dict" theo dung thu tu, bat ke JSON
-    dau vao la dinh dang Mistral OCR truc tiep hay da duoc boc them
-    1 lop ben ngoai (vi du {"ok":true,"mistral_response":{"pages":[...]}}).
+    dau vao dung khoa boc ngoai nao (mistral_response, ketQuaOcr...)
+    hay khong boc gi ca.
 
     Moi page dict duoc ky vong co it nhat 2 khoa:
       - "markdown": noi dung van ban markdown cua trang (str)
@@ -40,10 +40,17 @@ def detect_pages(data: dict):
 
     Neu JSON cua ban co cau truc khac, chi can sua ham nay.
     """
-    # Truong hop 1: dung format da thay: data["mistral_response"]["pages"]
-    if isinstance(data, dict) and "mistral_response" in data:
-        pages = data["mistral_response"].get("pages", [])
-        return sorted(pages, key=lambda p: p.get("index", 0))
+    # Cac ten khoa boc ngoai da tung gap: cung 1 cau truc ben trong
+    # (co "pages"), chi khac ten khoa o cap ngoai cung tuy phien ban
+    # tool xuat JSON (vd "mistral_response" tu ban cu, "ketQuaOcr" tu
+    # ban Ribbon/Addin moi hon). Them ten moi vao day neu gap tiep.
+    WRAPPER_KEYS = ("mistral_response", "ketQuaOcr")
+
+    if isinstance(data, dict):
+        for key in WRAPPER_KEYS:
+            if key in data and isinstance(data[key], dict) and "pages" in data[key]:
+                pages = data[key].get("pages", [])
+                return sorted(pages, key=lambda p: p.get("index", 0))
 
     # Truong hop 2: JSON la {"pages": [...]} truc tiep (khong co lop boc)
     if isinstance(data, dict) and "pages" in data:
@@ -55,7 +62,7 @@ def detect_pages(data: dict):
         return sorted(data, key=lambda p: p.get("index", 0))
 
     raise ValueError(
-        "Khong nhan dien duoc cau truc JSON. Can co 'DoMate_response.pages', "
+        "Khong nhan dien duoc cau truc JSON. Can co 'mistral_response.pages', "
         "'pages', hoac la 1 list cac trang. Hay sua ham detect_pages() trong "
         "converter.py cho khop voi dinh dang JSON cua ban."
     )
