@@ -1,1 +1,313 @@
 
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCR JSON → Word</title>
+<style>
+  :root {
+    --ink: #1c2430;
+    --paper: #f6f4ee;
+    --paper-raised: #ffffff;
+    --rule: #d9d4c6;
+    --accent: #2b5a55;
+    --accent-soft: #e4ede9;
+    --danger: #9a3324;
+    --mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+    --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px;
+  }
+
+  .masthead {
+    width: 100%;
+    max-width: 640px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 18px;
+    margin-bottom: 36px;
+  }
+
+  .masthead .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 6px 0;
+  }
+
+  .masthead h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .masthead p {
+    margin: 8px 0 0 0;
+    color: #55606e;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 640px;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 32px;
+  }
+
+  .dropzone {
+    border: 1.5px dashed var(--rule);
+    border-radius: 3px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    font-family: var(--mono);
+  }
+
+  .dropzone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .dropzone .icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .dropzone .primary {
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  .dropzone .secondary {
+    font-size: 12px;
+    color: #8a8f97;
+    margin-top: 6px;
+  }
+
+  #fileInput { display: none; }
+
+  .filename-row {
+    display: none;
+    margin-top: 16px;
+    padding: 10px 14px;
+    background: var(--accent-soft);
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 13px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .filename-row.visible { display: flex; }
+
+  .filename-row .remove {
+    cursor: pointer;
+    color: var(--danger);
+    font-family: var(--mono);
+    font-size: 12px;
+    background: none;
+    border: none;
+  }
+
+  button.convert-btn {
+    width: 100%;
+    margin-top: 22px;
+    padding: 13px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 3px;
+    font-family: var(--serif);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  button.convert-btn:disabled {
+    background: #b8bcc2;
+    cursor: not-allowed;
+  }
+
+  button.convert-btn:not(:disabled):hover {
+    background: var(--accent);
+  }
+
+  .status {
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .status.visible { display: block; }
+
+  .status.ok { color: var(--accent); }
+  .status.error { color: var(--danger); }
+
+  .status a {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--rule);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  footer {
+    max-width: 640px;
+    width: 100%;
+    margin-top: 28px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #9aa0a8;
+  }
+</style>
+</head>
+<body>
+
+  <div class="masthead">
+    <p class="eyebrow">Nội bộ · Chuyển đổi tài liệu</p>
+    <h1>OCR JSON → Word</h1>
+    <p>Tải lên file JSON kết quả OCR (Mistral OCR hoặc tương đương). Hệ thống tự động dựng lại ảnh, bảng, và công thức toán thành file Word chuẩn.</p>
+  </div>
+
+  <div class="card">
+    <div class="dropzone" id="dropzone">
+      <span class="icon">⌘</span>
+      <div class="primary">Kéo thả file .json vào đây, hoặc bấm để chọn</div>
+      <div class="secondary">Tối đa {{ max_mb }} MB</div>
+    </div>
+    <input type="file" id="fileInput" accept=".json">
+
+    <div class="filename-row" id="filenameRow">
+      <span id="filenameText"></span>
+      <button class="remove" id="removeFile">Xoá</button>
+    </div>
+
+    <button class="convert-btn" id="convertBtn" disabled>Chuyển sang Word</button>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <footer>Định dạng đầu ra: .docx — công thức toán ở dạng Equation, có thể sửa trực tiếp trong Word.</footer>
+
+<script>
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const filenameRow = document.getElementById('filenameRow');
+  const filenameText = document.getElementById('filenameText');
+  const removeFile = document.getElementById('removeFile');
+  const convertBtn = document.getElementById('convertBtn');
+  const statusBox = document.getElementById('status');
+
+  let selectedFile = null;
+
+  dropzone.addEventListener('click', () => fileInput.click());
+
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) setFile(fileInput.files[0]);
+  });
+
+  removeFile.addEventListener('click', () => {
+    selectedFile = null;
+    fileInput.value = '';
+    filenameRow.classList.remove('visible');
+    convertBtn.disabled = true;
+    statusBox.className = 'status';
+    statusBox.innerHTML = '';
+  });
+
+  function setFile(file) {
+    if (!file.name.toLowerCase().endsWith('.json')) {
+      showStatus('error', 'File phải có đuôi .json');
+      return;
+    }
+    selectedFile = file;
+    filenameText.textContent = file.name;
+    filenameRow.classList.add('visible');
+    convertBtn.disabled = false;
+    statusBox.className = 'status';
+    statusBox.innerHTML = '';
+  }
+
+  function showStatus(type, html) {
+    statusBox.className = 'status visible ' + type;
+    statusBox.innerHTML = html;
+  }
+
+  convertBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    convertBtn.disabled = true;
+    showStatus('', '<span class="spinner"></span>Đang chuyển đổi, vui lòng chờ…');
+
+    const formData = new FormData();
+    formData.append('jsonfile', selectedFile);
+
+    try {
+      const res = await fetch('/convert', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        showStatus('error', 'Lỗi: ' + (data.error || 'Không xác định'));
+        convertBtn.disabled = false;
+        return;
+      }
+
+      showStatus('ok', 'Xong! <a href="' + data.download_url + '">Tải file Word về</a>');
+      convertBtn.disabled = false;
+    } catch (err) {
+      showStatus('error', 'Lỗi kết nối tới server: ' + err.message);
+      convertBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
