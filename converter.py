@@ -1,10 +1,11 @@
 """
 converter.py
 ============
-Loi giai bai toan: nhan file JSON OCR (dinh dang Mistral OCR, hoac
-tuong tu - xem ham detect_pages() de mo rong sang dinh dang khac)
--> tra ve duong dan file .docx da hoan chinh (co day du anh, bang,
-cong thuc Word Equation that).
+Loi giai bai toan: nhan file JSON OCR do DoMate xuat ra (dung engine
+loi la Mistral OCR - CHI GHI CHU O DAY CHO LAP TRINH VIEN, KHONG bao
+gio hien ra cho nguoi dung cuoi; xem ham detect_pages() de mo rong
+sang dinh dang khac) -> tra ve duong dan file .docx da hoan chinh (co
+day du anh, bang, cong thuc Word Equation that).
 
 Dung lai dung logic da kiem chung o buoc build thu cong truoc do:
   1. Doc JSON, lay danh sach trang theo dung thu tu index.
@@ -30,7 +31,7 @@ import uuid
 def detect_pages(data: dict):
     """
     Tra ve danh sach cac "page dict" theo dung thu tu, bat ke JSON
-    dau vao dung khoa boc ngoai nao (mistral_response, ketQuaOcr...)
+    dau vao dung khoa boc ngoai nao (tuy phien ban DoMate xuat ra)
     hay khong boc gi ca.
 
     Moi page dict duoc ky vong co it nhat 2 khoa:
@@ -40,10 +41,14 @@ def detect_pages(data: dict):
 
     Neu JSON cua ban co cau truc khac, chi can sua ham nay.
     """
-    # Cac ten khoa boc ngoai da tung gap: cung 1 cau truc ben trong
-    # (co "pages"), chi khac ten khoa o cap ngoai cung tuy phien ban
-    # tool xuat JSON (vd "mistral_response" tu ban cu, "ketQuaOcr" tu
-    # ban Ribbon/Addin moi hon). Them ten moi vao day neu gap tiep.
+    # Cac ten khoa boc ngoai da tung gap tu cac phien ban DoMate khac
+    # nhau: cung 1 cau truc ben trong (co "pages"), chi khac ten khoa
+    # o cap ngoai cung. GHI CHU KY THUAT (chi lap trinh vien doc):
+    # "mistral_response" la ten do engine OCR loi (Mistral OCR API)
+    # dat, "ketQuaOcr" la ten do ban Ribbon/Addin DoMate moi hon tu
+    # dat lai bang tieng Viet. Nguoi dung cuoi khong bao gio thay 2
+    # ten nay - chi dung de doi chieu noi bo. Them ten moi vao day
+    # neu DoMate co phien ban xuat JSON khac nua sau nay.
     WRAPPER_KEYS = ("mistral_response", "ketQuaOcr")
 
     if isinstance(data, dict):
@@ -61,10 +66,12 @@ def detect_pages(data: dict):
     if isinstance(data, list):
         return sorted(data, key=lambda p: p.get("index", 0))
 
+    # Thong bao loi nay HIEN RA CHO NGUOI DUNG CUOI (qua web app / VBA
+    # macro) - KHONG duoc nhac ten khoa ky thuat noi bo (mistral_response,
+    # ketQuaOcr...) de khong lo cong nghe loi dang dung.
     raise ValueError(
-        "Khong nhan dien duoc cau truc JSON. Can co 'mistral_response.pages', "
-        "'pages', hoac la 1 list cac trang. Hay sua ham detect_pages() trong "
-        "converter.py cho khop voi dinh dang JSON cua ban."
+        "File JSON nay khong dung dinh dang ket qua OCR cua DoMate. "
+        "Vui long kiem tra lai ban da xuat dung file tu DoMate chua."
     )
 
 
