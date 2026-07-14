@@ -1,0 +1,9 @@
+work/
+uploads/
+outputs/
+media_tmp/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+*.zip
