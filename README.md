@@ -1,8 +1,9 @@
 # OCR JSON → Word (web app)
 
-Web app nội bộ: người dùng upload file JSON kết quả OCR (định dạng
-Mistral OCR — có `mistral_response.pages[].markdown` + `images[]` +
-`tables[]`), server tự động dựng lại thành file `.docx` đầy đủ ảnh,
+Web app nội bộ: người dùng upload file JSON kết quả OCR từ **DoMate**
+(engine lõi bên dưới là Mistral OCR — chi tiết này chỉ dành cho lập
+trình viên bảo trì, không hiển thị ra ngoài cho người dùng), server
+tự động dựng lại thành file `.docx` đầy đủ ảnh,
 bảng, và công thức toán (Word Equation thật, không phải text).
 
 Đây chính là pipeline đã kiểm chứng thủ công trước đó, chỉ đóng gói
@@ -124,14 +125,14 @@ thêm 1 dòng cron:
 
 ## Mở rộng thêm
 
-- **Định dạng JSON khác Mistral OCR:** sửa hàm `detect_pages()` trong
+- **Định dạng JSON khác (nếu DoMate đổi cấu trúc xuất ở phiên bản sau):** sửa hàm `detect_pages()` trong
   `converter.py` — đây là điểm duy nhất cần đổi để nhận diện cấu trúc
   JSON khác (chỉ cần trả về đúng thứ tự list các trang, mỗi trang có
   `markdown` + `images`).
 - **Giới hạn ai được dùng:** thêm xác thực đơn giản (Basic Auth qua
   Nginx, hoặc 1 mật khẩu chung) nếu deploy ra ngoài internet công khai
   thay vì chỉ trong mạng nội bộ.
-- **Xử lý bảng của JSON khác Mistral OCR** (nếu bảng không nằm sẵn
+- **Xử lý bảng của JSON khác (nếu DoMate đổi cấu trúc xuất)** (nếu bảng không nằm sẵn
   dạng markdown `| a | b |` mà nằm trong khoá `tables[]` riêng): cần
   thêm bước tự sinh chuỗi markdown table từ đó trước khi ghép, tương
   tự cách `converter.py` đang xử lý ảnh từ `images[]`.
