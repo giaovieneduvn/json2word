@@ -55,7 +55,7 @@ def detect_pages(data: dict):
         return sorted(data, key=lambda p: p.get("index", 0))
 
     raise ValueError(
-        "Khong nhan dien duoc cau truc JSON. Can co 'mistral_response.pages', "
+        "Khong nhan dien duoc cau truc JSON. Can co 'DoMate_response.pages', "
         "'pages', hoac la 1 list cac trang. Hay sua ham detect_pages() trong "
         "converter.py cho khop voi dinh dang JSON cua ban."
     )
