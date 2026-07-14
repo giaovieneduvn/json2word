@@ -151,7 +151,60 @@ def convert_json_to_docx(json_path: str, work_dir: str) -> str:
     if not os.path.exists(docx_path):
         raise RuntimeError("Pandoc chay xong nhung khong thay file output.docx")
 
+    # Pandoc mac dinh dung style bang ten "Table" - kieu toi gian chi
+    # co vien tren/duoi (giong bang trong sach hoc thuat), KHONG co
+    # duong ke day du giua cac o. Doi sang style "Table Grid" (co san
+    # trong Word, ke vien day du moi o) de bang hien thi ro rang hon.
+    apply_full_table_borders(docx_path)
+
     return docx_path
+
+
+def apply_full_table_borders(docx_path: str) -> None:
+    """
+    Mo lai file docx vua tao, ve THANG duong vien day du (tren, duoi,
+    trai, phai, va ke ngang/doc giua cac o) cho MOI bang, bang cach
+    ghi truc tiep vao XML cua bang (<w:tblBorders>).
+
+    LUU Y KY THUAT: ban dau thu doi table.style = "Table Grid" (mot
+    style co san khi mo Word binh thuong), nhung KHONG hoat dong vi
+    file docx do Pandoc sinh ra chi co san 1 style ten "Table" (kieu
+    toi gian, chi vien tren/duoi) - KHONG co san style "Table Grid"
+    de gan vao. Ve thang XML nhu duoi day khong phu thuoc viec style
+    do co ton tai san hay khong, nen chac chan hoat dong.
+    """
+    from docx import Document
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+
+    doc = Document(docx_path)
+    if not doc.tables:
+        return
+
+    def set_table_borders(table):
+        tbl = table._tbl
+        tblPr = tbl.tblPr
+
+        # Xoa tblBorders cu neu co, tranh bi trung/xung dot
+        existing = tblPr.find(qn('w:tblBorders'))
+        if existing is not None:
+            tblPr.remove(existing)
+
+        borders = OxmlElement('w:tblBorders')
+        for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+            el = OxmlElement(f'w:{edge}')
+            el.set(qn('w:val'), 'single')
+            el.set(qn('w:sz'), '4')       # do day duong ke (1/8 pt units)
+            el.set(qn('w:space'), '0')
+            el.set(qn('w:color'), '000000')
+            borders.append(el)
+
+        tblPr.append(borders)
+
+    for table in doc.tables:
+        set_table_borders(table)
+
+    doc.save(docx_path)
 
 
 def convert_json_bytes_to_docx(json_bytes: bytes, base_work_dir: str) -> str:
